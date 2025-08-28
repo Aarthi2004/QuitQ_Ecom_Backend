@@ -1,0 +1,6 @@
+@QuitQ_Ecom_HostAddress = http://localhost:5193
+
+GET {{QuitQ_Ecom_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

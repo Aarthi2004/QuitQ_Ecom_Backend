@@ -1,0 +1,108 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Hotspots>
+  <Hotspot>
+    <Assembly>QuitQ_Ecom</Assembly>
+    <Class>QuitQ_Ecom.Migrations.init</Class>
+    <MethodName>BuildTargetModel(...)</MethodName>
+    <ShortName />
+    <Line>20</Line>
+    <FileIndex>1</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>100</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>QuitQ_Ecom</Assembly>
+    <Class>QuitQ_Ecom.Migrations.password</Class>
+    <MethodName>BuildTargetModel(...)</MethodName>
+    <ShortName />
+    <Line>20</Line>
+    <FileIndex>1</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>100</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>QuitQ_Ecom</Assembly>
+    <Class>QuitQ_Ecom.Migrations.QuitQEcomContextModelSnapshot</Class>
+    <MethodName>BuildModel(...)</MethodName>
+    <ShortName />
+    <Line>17</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>100</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>QuitQ_Ecom</Assembly>
+    <Class>QuitQ_Ecom.Migrations.UpdatedUserModel</Class>
+    <MethodName>BuildTargetModel(...)</MethodName>
+    <ShortName />
+    <Line>20</Line>
+    <FileIndex>1</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>100</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>QuitQ_Ecom</Assembly>
+    <Class>QuitQ_Ecom.Migrations.init</Class>
+    <MethodName>Up(...)</MethodName>
+    <ShortName />
+    <Line>15</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>88</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>QuitQ_Ecom</Assembly>
+    <Class>QuitQ_Ecom.Mapper.MappingProfile</Class>
+    <MethodName>.ctor()</MethodName>
+    <ShortName />
+    <Line>9</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>62</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>QuitQ_Ecom</Assembly>
+    <Class>QuitQ_Ecom.Context.QuitQEcomContext</Class>
+    <MethodName>OnModelCreating(...)</MethodName>
+    <ShortName />
+    <Line>48</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>42</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+</Hotspots>
