@@ -1,14 +1,19 @@
-﻿using AutoMapper;
+﻿ using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+ using Microsoft.Extensions.Logging;
+using QuitQ_Ecom.Context;
+ using QuitQ_Ecom.DTOs;
+ using QuitQ_Ecom.Interfaces;
+ using QuitQ_Ecom.Models;
+ using System;
+ using System.Collections.Generic;
+ using System.Linq;
+ using System.Threading.Tasks;
+
+using AutoMapper;
 using QuitQ_Ecom.Context;
 using QuitQ_Ecom.DTOs;
 using QuitQ_Ecom.Interfaces;
-using QuitQ_Ecom.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace QuitQ_Ecom.Repositories
 {
@@ -27,6 +32,7 @@ namespace QuitQ_Ecom.Repositories
 
         public async Task<bool> GenerateOtpAtCustomer(int shipperId)
         {
+            // ... (existing code)
             try
             {
                 var shipperObj = await _context.Shippers.FindAsync(shipperId);
@@ -34,7 +40,7 @@ namespace QuitQ_Ecom.Repositories
 
                 Random rand = new Random();
                 int otp = rand.Next(100000, 999999);
-                shipperObj.ShipperName = otp.ToString();
+                shipperObj.ShipperName = otp.ToString(); // OTP is stored in ShipperName
                 _context.Shippers.Update(shipperObj);
                 await _context.SaveChangesAsync();
 
@@ -55,6 +61,7 @@ namespace QuitQ_Ecom.Repositories
 
         public async Task<List<ShipperDTO>> GetAllItems()
         {
+            // ... (existing code)
             try
             {
                 var obj = await _context.Shippers.ToListAsync();
@@ -71,6 +78,7 @@ namespace QuitQ_Ecom.Repositories
 
         public async Task<ShipperDTO> GetShipperItemById(int id)
         {
+            // ... (existing code)
             try
             {
                 var shipperObj = await _context.Shippers.FindAsync(id);
@@ -85,8 +93,26 @@ namespace QuitQ_Ecom.Repositories
             }
         }
 
+        // New method to get shipper item by OrderId
+        public async Task<ShipperDTO> GetShipperItemByOrderId(int orderId)
+        {
+            try
+            {
+                var shipperObj = await _context.Shippers.FirstOrDefaultAsync(s => s.OrderId == orderId);
+                if (shipperObj == null) return null;
+
+                return _mapper.Map<ShipperDTO>(shipperObj);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error retrieving shipper by Order ID {orderId}: {ex.Message}");
+                return null;
+            }
+        }
+
         public async Task<bool> UpdateShipperOrderStatusByOrderId(int id, string deliveryStatus)
         {
+            // ... (existing code)
             try
             {
                 var orderObj = await _context.Orders.FirstOrDefaultAsync(x => x.OrderId == id);
@@ -106,6 +132,7 @@ namespace QuitQ_Ecom.Repositories
 
         public async Task<bool> ValidateOtp(int shipperId, string otp)
         {
+            // ... (existing code)
             try
             {
                 var shipperObj = await _context.Shippers.FindAsync(shipperId);

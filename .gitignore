@@ -1,0 +1,10 @@
+# VS + .NET build junk
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.pdb
+*.cache
+*.vsidx
+*.log

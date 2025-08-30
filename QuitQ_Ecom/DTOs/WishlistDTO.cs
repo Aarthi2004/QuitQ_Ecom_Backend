@@ -10,5 +10,8 @@ namespace QuitQ_Ecom.DTOs
 
         [Required(ErrorMessage = "Product ID is required.")]
         public int? ProductId { get; set; }
+        
+        // Add this line to include the product details
+        public ProductDTO? Product { get; set; }
     }
 }

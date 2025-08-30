@@ -41,6 +41,25 @@ namespace QuitQ_Ecom.Controllers
             }
         }
 
+        [HttpGet("by-order/{orderId:int}")]
+        public async Task<IActionResult> GetShipItemByOrderId(int orderId)
+        {
+            try
+            {
+                var shipperObj = await _shipperService.GetShipperItemByOrderId(orderId);
+                if (shipperObj == null)
+                {
+                    return NotFound();
+                }
+                return Ok(shipperObj);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"An error occurred while getting ship item by Order ID: {ex.Message}");
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpPut("updateorder")]
         public async Task<IActionResult> UpdateOrderStatus([FromBody] UpdateOrderStatusDTO obj)
         {

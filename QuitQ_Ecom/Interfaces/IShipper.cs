@@ -1,6 +1,8 @@
-﻿using QuitQ_Ecom.DTOs;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿// using QuitQ_Ecom.DTOs;
+// using System.Collections.Generic;
+// using System.Threading.Tasks;
+
+using QuitQ_Ecom.DTOs;
 
 namespace QuitQ_Ecom.Interfaces
 {
@@ -8,6 +10,7 @@ namespace QuitQ_Ecom.Interfaces
     {
         Task<List<ShipperDTO>> GetAllItems();
         Task<ShipperDTO> GetShipperItemById(int id);
+        Task<ShipperDTO> GetShipperItemByOrderId(int orderId); // New method
         Task<bool> UpdateShipperOrderStatusByOrderId(int id, string deliveryStatus);
         Task<bool> GenerateOtpAtCustomer(int shipperId);
         Task<bool> ValidateOtp(int shipperid, string otp);
