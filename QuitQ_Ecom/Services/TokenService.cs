@@ -13,6 +13,8 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+// We no longer need BCrypt.Net, so it can be removed.
+// using BCrypt.Net; 
 
 namespace QuitQ_Ecom.Services
 {
@@ -20,9 +22,11 @@ namespace QuitQ_Ecom.Services
     {
         private readonly IConfiguration _config;
         private readonly QuitQEcomContext _context;
-        private readonly IMapper _mapper;
         private readonly ILogger<TokenService> _logger;
+        private readonly IMapper _mapper;
 
+
+        // Your constructor might have IMapper, so I've added it back.
         public TokenService(IConfiguration config, QuitQEcomContext context, IMapper mapper, ILogger<TokenService> logger)
         {
             _config = config;
@@ -31,57 +35,70 @@ namespace QuitQ_Ecom.Services
             _logger = logger;
         }
 
-        public async Task<string> AuthenticateAsync(LoginDTO login)
+        public async Task<LoginResponseDTO> AuthenticateAsync(LoginDTO login)
         {
             try
             {
-                // Hash password using same method as UserService
-                var hashedPassword = UserService.HashPassword(login.Password);
-
-                // Find user
+                // Find user by their username first.
                 var userEntity = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Username == login.Username && u.Password == hashedPassword);
+                    .FirstOrDefaultAsync(u => u.Username == login.Username);
 
                 if (userEntity == null)
-                    return null;
+                {
+                    return null; // User not found
+                }
 
-                // Get role
+                // --- CHANGE IS HERE ---
+                // Instead of BCrypt, we now use your original password hashing logic.
+                // We re-hash the password the user typed in and compare it to what's in the database.
+                var hashedPassword = UserService.HashPassword(login.Password); // Hashing the login attempt
+                if (userEntity.Password != hashedPassword)
+                {
+                    return null; // Passwords do not match
+                }
+                // --- END OF CHANGE ---
+
+                // Get user's role
                 var userRole = await _context.UserTypes
                     .Where(x => x.UserTypeId == userEntity.UserTypeId)
                     .Select(x => x.UserType1)
                     .FirstOrDefaultAsync();
 
-                // Convert to UNIX epoch seconds for iat
-                var issuedAt = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
-
-                // Build claims
+                // Build claims for the JWT
                 var claims = new[]
                 {
-                    new Claim(JwtRegisteredClaimNames.Sub, _config["Jwt:Subject"]),
+                    new Claim(JwtRegisteredClaimNames.Sub, userEntity.UserId.ToString()),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim(JwtRegisteredClaimNames.Iat, issuedAt.ToString(), ClaimValueTypes.Integer64),
-                    new Claim("UserId", userEntity.UserId.ToString()),
-                    new Claim("UserName", userEntity.Username),
-                    new Claim("Email", userEntity.Email),
-                    new Claim(ClaimTypes.Role, userRole ?? "user")
+                    new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+                    new Claim("username", userEntity.Username),
+                    new Claim(ClaimTypes.Role, userRole ?? "Customer")
                 };
 
-                // Generate token
+                // Generate the JWT token string
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
                 var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-                var token = new JwtSecurityToken(
+                var tokenDescriptor = new JwtSecurityToken(
                     _config["Jwt:Issuer"],
                     _config["Jwt:Audience"],
                     claims,
                     expires: DateTime.UtcNow.AddDays(2),
                     signingCredentials: signIn);
+                var tokenString = new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
 
-                return new JwtSecurityTokenHandler().WriteToken(token);
+                // Create and return the complete response object
+                var loginResponse = new LoginResponseDTO
+                {
+                    UserId = userEntity.UserId,
+                    Username = userEntity.Username,
+                    Role = userRole,
+                    Token = tokenString
+                };
+
+                return loginResponse;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Token generation failed");
+                _logger.LogError(ex, "Authentication failed for user {Username}", login.Username);
                 throw;
             }
         }

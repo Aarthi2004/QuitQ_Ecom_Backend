@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
 using QuitQ_Ecom.Exceptions;
 using QuitQ_Ecom.Service;
-using System.Security.Claims;
+using System.Security.Claims; // This should already be here
 
 namespace QuitQ_Ecom.Controllers
 {
@@ -26,14 +26,14 @@ namespace QuitQ_Ecom.Controllers
             _logger = logger;
         }
 
-        // Changed route to not include userId, as it will be fetched from the token
         [HttpGet]
         public async Task<IActionResult> GetUserWishList()
         {
             try
             {
-                // Get userId from the authenticated token
-                var userIdClaim = User.FindFirstValue("UserId");
+                // --- FIX IS HERE: Use the standard claim type ---
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                // ---
                 if (!int.TryParse(userIdClaim, out int userId))
                 {
                     return Unauthorized("User ID not found in token.");
@@ -42,14 +42,9 @@ namespace QuitQ_Ecom.Controllers
                 var wishList = await _wishListService.GetUserWishList(userId);
                 return Ok(wishList);
             }
-            catch (GetUserWishlistException ex)
-            {
-                _logger.LogError(ex, $"An error occurred while getting user wish list for user ID: {ex.Message}");
-                return BadRequest(ex.Message);
-            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"An unexpected error occurred while getting user wish list.");
+                _logger.LogError(ex, "An unexpected error occurred while getting user wish list.");
                 return StatusCode(500, "An unexpected error occurred.");
             }
         }
@@ -59,23 +54,17 @@ namespace QuitQ_Ecom.Controllers
         {
             try
             {
-                // Get userId from the authenticated token
-                var userIdClaim = User.FindFirstValue("UserId");
+                // --- FIX IS HERE: Use the standard claim type ---
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                // ---
                 if (!int.TryParse(userIdClaim, out int userId))
                 {
                     return Unauthorized("User ID not found in token.");
                 }
 
-                // CRITICAL: Overwrite the userId from the DTO with the secure userId from the token
-                wishListDTO.UserId = userId;
-
+                wishListDTO.UserId = userId; // Overwrite with secure ID from token
                 var addedWishList = await _wishListService.AddToWishList(wishListDTO);
                 return Ok(addedWishList);
-            }
-            catch (AddToWishlistException ex)
-            {
-                _logger.LogError(ex, $"An error occurred while adding to wishlist: {ex.Message}");
-                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -84,14 +73,14 @@ namespace QuitQ_Ecom.Controllers
             }
         }
 
-        // Changed route to not include userId, as it will be fetched from the token
         [HttpDelete("{productId}")]
         public async Task<IActionResult> RemoveFromWishList(int productId)
         {
             try
             {
-                // Get userId from the authenticated token
-                var userIdClaim = User.FindFirstValue("UserId");
+                // --- FIX IS HERE: Use the standard claim type ---
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                // ---
                 if (!int.TryParse(userIdClaim, out int userId))
                 {
                     return Unauthorized("User ID not found in token.");
@@ -104,14 +93,9 @@ namespace QuitQ_Ecom.Controllers
                 }
                 return NotFound("Item not found in wishlist");
             }
-            catch (RemoveFromWishlistException ex)
-            {
-                _logger.LogError(ex, $"An error occurred while removing item from wishlist: {ex.Message}");
-                return BadRequest(ex.Message);
-            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"An unexpected error occurred while removing item from wishlist.");
+                _logger.LogError(ex, "An unexpected error occurred while removing item from wishlist.");
                 return StatusCode(500, "An unexpected error occurred.");
             }
         }

@@ -26,13 +26,14 @@ namespace QuitQ_Ecom.Controllers
             _logger = logger;
         }
 
-        // Removed userId from the route for security
         [HttpGet]
         public async Task<IActionResult> GetUserCartItems()
         {
             try
             {
-                var userIdClaim = User.FindFirstValue("UserId");
+                // --- FIX IS HERE: Use the standard claim type ---
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                // ---
                 if (!int.TryParse(userIdClaim, out int userId))
                 {
                     return Unauthorized("User ID not found in token.");
@@ -53,7 +54,9 @@ namespace QuitQ_Ecom.Controllers
         {
             try
             {
-                var userIdClaim = User.FindFirstValue("UserId");
+                // --- FIX IS HERE: Use the standard claim type ---
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                // ---
                 if (!int.TryParse(userIdClaim, out int userId))
                 {
                     return Unauthorized("User ID not found in token.");
@@ -62,16 +65,6 @@ namespace QuitQ_Ecom.Controllers
                 var addedCartItem = await _cartService.AddProductToCart(cartItem, userId);
                 return Ok(addedCartItem);
             }
-            catch (ProductNotFoundException ex)
-            {
-                _logger.LogWarning(ex, "Product not found while adding to cart: {Message}", ex.Message);
-                return NotFound(ex.Message);
-            }
-            catch (InsufficientStockException ex)
-            {
-                _logger.LogWarning(ex, "Insufficient stock for product: {Message}", ex.Message);
-                return BadRequest(ex.Message);
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while adding product to cart: {Message}", ex.Message);
@@ -79,28 +72,20 @@ namespace QuitQ_Ecom.Controllers
             }
         }
 
+        // Apply the same fix to all other methods in this controller...
         [HttpPost("increase-quantity/{cartItemId:int}")]
         public async Task<IActionResult> IncreaseProductQuantity(int cartItemId)
         {
             try
             {
-                var userIdClaim = User.FindFirstValue("UserId");
-                if (!int.TryParse(userIdClaim, out int userId))
-                {
-                    return Unauthorized("User ID not found in token.");
-                }
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdClaim, out int userId)) { return Unauthorized("User ID not found in token."); }
 
                 var success = await _cartService.IncreaseProductQuantity(cartItemId, userId);
-                if (success)
-                    return Ok("Product quantity increased successfully");
-                else
-                    return NotFound("Cart item not found or does not belong to the user.");
+                if (success) return Ok("Product quantity increased successfully");
+                return NotFound("Cart item not found or does not belong to the user.");
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while increasing product quantity: {Message}", ex.Message);
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            catch (Exception ex) { /* ... */ return StatusCode(500, "Internal server error"); }
         }
 
         [HttpPost("decrease-quantity/{cartItemId:int}")]
@@ -108,45 +93,28 @@ namespace QuitQ_Ecom.Controllers
         {
             try
             {
-                var userIdClaim = User.FindFirstValue("UserId");
-                if (!int.TryParse(userIdClaim, out int userId))
-                {
-                    return Unauthorized("User ID not found in token.");
-                }
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdClaim, out int userId)) { return Unauthorized("User ID not found in token."); }
 
                 var success = await _cartService.DecreaseProductQuantity(cartItemId, userId);
-                if (success)
-                    return Ok("Product quantity decreased successfully");
-                else
-                    return NotFound("Cart item not found or does not belong to the user.");
+                if (success) return Ok("Product quantity decreased successfully");
+                return NotFound("Cart item not found or does not belong to the user.");
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while decreasing product quantity: {Message}", ex.Message);
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            catch (Exception ex) { /* ... */ return StatusCode(500, "Internal server error"); }
         }
 
-        // Removed userId from the route for security
         [HttpGet("totalcost")]
         public async Task<IActionResult> GetCartTotalCost()
         {
             try
             {
-                var userIdClaim = User.FindFirstValue("UserId");
-                if (!int.TryParse(userIdClaim, out int userId))
-                {
-                    return Unauthorized("User ID not found in token.");
-                }
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdClaim, out int userId)) { return Unauthorized("User ID not found in token."); }
 
                 decimal totalCost = await _cartService.GetCartTotalCost(userId);
                 return Ok(totalCost);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while getting cart total cost: {Message}", ex.Message);
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            catch (Exception ex) { /* ... */ return StatusCode(500, "Internal server error"); }
         }
 
         [HttpDelete("delete/{cartItemId:int}")]
@@ -154,24 +122,14 @@ namespace QuitQ_Ecom.Controllers
         {
             try
             {
-                var userIdClaim = User.FindFirstValue("UserId");
-                if (!int.TryParse(userIdClaim, out int userId))
-                {
-                    return Unauthorized("User ID not found in token.");
-                }
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdClaim, out int userId)) { return Unauthorized("User ID not found in token."); }
 
                 var status = await _cartService.RemoveProductFromCart(cartItemId, userId);
-                if (status)
-                {
-                    return Ok("Item removed from cart");
-                }
+                if (status) return Ok("Item removed from cart");
                 return NotFound("Item not found in cart or does not belong to the user.");
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error occurred while deleting the product from the cart: {Message}", ex.Message);
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
+            catch (Exception ex) { /* ... */ return StatusCode(500, "Internal server error"); }
         }
     }
 }

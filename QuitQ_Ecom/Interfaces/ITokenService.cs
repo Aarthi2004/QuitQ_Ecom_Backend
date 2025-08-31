@@ -1,10 +1,10 @@
-﻿using QuitQ_Ecom.DTOs;
-using System.Threading.Tasks;
+﻿using QuitQ_Ecom.DTOs; // <-- Add this using statement
 
 namespace QuitQ_Ecom.Interfaces
 {
     public interface ITokenService
     {
-        Task<string> AuthenticateAsync(LoginDTO login);
+        // Change the return type from Task<string> to the new DTO
+        Task<LoginResponseDTO> AuthenticateAsync(LoginDTO login);
     }
 }

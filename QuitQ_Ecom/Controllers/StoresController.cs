@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using QuitQ_Ecom.DTOs;
 using QuitQ_Ecom.Interfaces;
 using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -54,132 +55,151 @@ namespace QuitQ_Ecom.Controllers
             }
         }
 
-        [Authorize(Roles = "Seller,Admin")] // CORRECTED: Casing to match your JWT token
+        [Authorize(Roles = "Seller,Admin")]
         [HttpPost("")]
         public async Task<IActionResult> AddStore([FromForm] StoreDTO storeDTO)
         {
             try
             {
-                // CORRECTED: Claim name to match your JWT token
-                var userIdClaim = User.FindFirst("UserId");
+                int sellerIdToAssign;
 
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int sellerId))
+                // --- THIS IS THE CORRECTED ROLE-BASED LOGIC ---
+                // First, check the role of the user making the request.
+                if (User.IsInRole("Admin"))
                 {
-                    _logger.LogWarning("AddStore attempt failed: User ID claim not found or invalid.");
-                    return Unauthorized("User ID claim not found or invalid.");
+                    // If the user is an Admin, we MUST use the SellerId that was provided in the form.
+                    // This allows the Admin to create a store on behalf of any seller.
+                    if (storeDTO.SellerId == null || storeDTO.SellerId <= 0)
+                    {
+                        return BadRequest("When creating a store as an Admin, a valid SellerId must be provided.");
+                    }
+                    sellerIdToAssign = storeDTO.SellerId.Value;
                 }
+                else // Otherwise, the user making the request must be a Seller
+                {
+                    // If the user is a Seller, we IGNORE any SellerId from the form for security.
+                    // We can only allow them to create a store for themselves, using their own ID from the token.
+                    var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                    if (!int.TryParse(userIdClaim, out int tokenSellerId))
+                    {
+                        return Unauthorized("Your User ID could not be found in your token.");
+                    }
+                    sellerIdToAssign = tokenSellerId;
+                }
+                // --- END OF CORRECTED LOGIC ---
 
                 if (storeDTO.StoreImageFile == null || storeDTO.StoreImageFile.Length == 0)
                 {
-                    _logger.LogWarning("AddStore attempt failed: Store image file is empty.");
-                    return BadRequest("Store image file is required.");
+                    return BadRequest("A store image file is required.");
                 }
 
-                storeDTO.SellerId = sellerId;
+                // Now, we set the correctly determined sellerId on the DTO before sending it to the service.
+                storeDTO.SellerId = sellerIdToAssign;
 
                 var returnedObj = await _storeService.AddStore(storeDTO);
                 if (returnedObj == null)
                 {
-                    _logger.LogError("Store service returned null after adding store.");
-                    return StatusCode(500, "Failed to add store.");
+                    return StatusCode(500, "An error occurred while adding the store.");
                 }
 
-                return Ok("Store added successfully");
+                // Return the created object so the frontend can see the result.
+                return Ok(returnedObj);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while adding a new store.");
-                return StatusCode(500, $"Internal server error while adding store: {ex.Message}");
+                _logger.LogError(ex, "An unexpected error occurred while adding a new store.");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
 
-        [Authorize(Roles = "Seller,Admin")] // CORRECTED: Casing to match your JWT token
+        [Authorize(Roles = "Seller,Admin")]
         [HttpPut("{storeId:int}")]
         public async Task<IActionResult> UpdateStore([FromRoute] int storeId, [FromForm] StoreDTO storeDTO)
         {
             try
             {
-                // CORRECTED: Claim name to match your JWT token
-                var userIdClaim = User.FindFirst("UserId");
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int sellerId))
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdClaim, out int sellerId))
                 {
                     return Unauthorized("User ID claim not found or invalid.");
                 }
 
-                // The controller should not contain database or mapping logic.
-                // It should call the service and handle the result.
-                storeDTO.SellerId = sellerId;
-
-                var returnedObj = await _storeService.UpdateStore(storeId, storeDTO);
-
-                if (returnedObj == null)
+                // Security check: ensure the user owns this store or is an admin
+                var storeToUpdate = await _storeService.GetStoreById(storeId);
+                if (storeToUpdate == null) return NotFound();
+                if (storeToUpdate.SellerId != sellerId && !User.IsInRole("Admin"))
                 {
-                    return NotFound();
+                    return Forbid("You do not have permission to update this store.");
                 }
 
-                return Ok("Store updated successfully");
+                // The service layer needs the sellerId from the token to ensure consistency
+                storeDTO.SellerId = storeToUpdate.SellerId;
+
+                var returnedObj = await _storeService.UpdateStore(storeId, storeDTO);
+                if (returnedObj == null) return NotFound();
+                return Ok(returnedObj);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"An error occurred while updating store with ID {storeId}.");
-                return StatusCode(500, $"Internal server error while updating store: {ex.Message}");
+                return StatusCode(500, "Internal server error.");
             }
         }
 
         [HttpDelete("{storeId:int}")]
-        [Authorize(Roles = "Seller,Admin")] // CORRECTED: Casing to match your JWT token
+        [Authorize(Roles = "Seller,Admin")]
         public async Task<IActionResult> DeleteStore([FromRoute] int storeId)
         {
             try
             {
-                // CORRECTED: Claim name to match your JWT token
-                var userIdClaim = User.FindFirst("UserId");
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int sellerId))
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (!int.TryParse(userIdClaim, out int sellerId))
                 {
                     return Unauthorized("User ID claim not found or invalid.");
                 }
 
                 var storeToDelete = await _storeService.GetStoreById(storeId);
-                if (storeToDelete == null)
-                {
-                    return NotFound();
-                }
+                if (storeToDelete == null) return NotFound();
 
+                // Security check: Only the owner or an Admin can delete the store.
                 if (storeToDelete.SellerId != sellerId && !User.IsInRole("Admin"))
                 {
                     return Forbid("You do not have permission to delete this store.");
                 }
 
                 var deleted = await _storeService.DeleteStore(storeId);
-                if (!deleted)
-                    return NotFound();
-
+                if (!deleted) return NotFound();
                 return Ok("Store deleted successfully");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"An error occurred while deleting store with ID {storeId}.");
-                return StatusCode(500, "Internal server error while deleting store.");
+                return StatusCode(500, "Internal server error.");
             }
         }
 
         [HttpGet("userstores/{userId:int}")]
-        [Authorize(Roles = "Seller,Admin")] // CORRECTED: Casing to match your JWT token
+        [Authorize(Roles = "Seller,Admin")]
         public async Task<IActionResult> GetAllStoresOfUserByUserId(int userId)
         {
             try
             {
-                var storeslist = await _storeService.GetAllStoresOfUserByUserId(userId);
-                if (storeslist != null)
+                // Security Check: ensure the requesting user is the one they're asking for, or an admin
+                var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (requestingUserId != userId.ToString() && !User.IsInRole("Admin"))
                 {
-                    return Ok(storeslist);
+                    return Forbid("You are not authorized to view these stores.");
                 }
-                return NotFound();
+
+                var storeslist = await _storeService.GetAllStoresOfUserByUserId(userId);
+
+                // Best practice: return 200 OK with an empty list if nothing is found
+                return Ok(storeslist ?? new List<StoreDTO>());
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"An error occurred while getting stores for user with ID {userId}.");
-                return StatusCode(500, "Internal server error while retrieving user stores.");
+                return StatusCode(500, "Internal server error.");
             }
         }
     }
