@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace QuitQ_Ecom.DTOs
@@ -8,7 +9,6 @@ namespace QuitQ_Ecom.DTOs
         public int? UserId { get; set; }
 
         [Required(ErrorMessage = "User type ID is required.")]
-        [Range(1, int.MaxValue, ErrorMessage = "User type ID must be a positive integer.")]
         public int UserTypeId { get; set; }
 
         [Required(ErrorMessage = "Username is required.")]
@@ -16,7 +16,9 @@ namespace QuitQ_Ecom.DTOs
         public string Username { get; set; }
 
         [Required(ErrorMessage = "Password is required.")]
-        [PasswordPropertyText]
+        // --- MODIFICATION START ---
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters long.")]
+        // --- MODIFICATION END ---
         [DataType(DataType.Password)]
         public string Password { get; set; }
 
@@ -40,10 +42,8 @@ namespace QuitQ_Ecom.DTOs
         [Phone(ErrorMessage = "Contact number must be a valid phone number.")]
         public string ContactNumber { get; set; }
 
-        [Range(1, int.MaxValue, ErrorMessage = "Gender ID must be a positive integer.")]
         public int? GenderId { get; set; }
 
-        [Range(1, int.MaxValue, ErrorMessage = "User status ID must be a positive integer.")]
         public int? UserStatusId { get; set; }
     }
 }

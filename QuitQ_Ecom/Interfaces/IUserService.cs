@@ -11,5 +11,9 @@ namespace QuitQ_Ecom.Interfaces
         Task<List<UserDTO>> GetUsersByUserType(int typeId);
         Task<UserDTO> GetUserByIdAsync(int id);
         Task<UserDTO> DeleteUserByIdAsync(int id);
+
+        // --- NEW METHOD START ---
+        Task<bool> ResetPasswordAsync(ResetPasswordDTO resetPasswordDTO);
+        // --- NEW METHOD END ---
     }
 }

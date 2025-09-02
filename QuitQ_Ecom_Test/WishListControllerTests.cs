@@ -1,16 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
 using QuitQ_Ecom.Controllers;
 using QuitQ_Ecom.DTOs;
 using QuitQ_Ecom.Service;
-using System.Security.Claims;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using QuitQ_Ecom.Exceptions;
 using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace QuitQ_Ecom_Test.Controllers
 {
@@ -20,7 +19,6 @@ namespace QuitQ_Ecom_Test.Controllers
         private Mock<IWishlistService> _wishlistServiceMock;
         private WishlistController _wishlistController;
         private Mock<ILogger<WishlistController>> _loggerMock;
-        private ClaimsPrincipal _mockUser;
         private int _testUserId;
 
         [SetUp]
@@ -30,19 +28,15 @@ namespace QuitQ_Ecom_Test.Controllers
             _loggerMock = new Mock<ILogger<WishlistController>>();
             _wishlistController = new WishlistController(_wishlistServiceMock.Object, _loggerMock.Object);
 
-            // Set up a mock user with a UserId claim
             _testUserId = 1;
-            var claims = new List<Claim>
+            var user = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
             {
-                new Claim("UserId", _testUserId.ToString())
-            };
-            var identity = new ClaimsIdentity(claims, "TestAuthType");
-            _mockUser = new ClaimsPrincipal(identity);
+                new Claim(ClaimTypes.NameIdentifier, _testUserId.ToString())
+            }, "TestAuthentication"));
 
-            // Set the Controller's HttpContext to include the mock user
             _wishlistController.ControllerContext = new ControllerContext
             {
-                HttpContext = new DefaultHttpContext { User = _mockUser }
+                HttpContext = new DefaultHttpContext { User = user }
             };
         }
 
@@ -88,7 +82,7 @@ namespace QuitQ_Ecom_Test.Controllers
             var wishlistItemToAdd = new WishListDTO { ProductId = 1 };
             var returnedWishlistItem = new WishListDTO { WishListId = 1, UserId = _testUserId, ProductId = 1 };
             _wishlistServiceMock.Setup(service => service.AddToWishList(It.Is<WishListDTO>(dto => dto.UserId == _testUserId && dto.ProductId == wishlistItemToAdd.ProductId)))
-                                .ReturnsAsync(returnedWishlistItem);
+                                  .ReturnsAsync(returnedWishlistItem);
 
             // Act
             var result = await _wishlistController.AddToWishList(wishlistItemToAdd);
@@ -136,21 +130,20 @@ namespace QuitQ_Ecom_Test.Controllers
         }
 
         [Test]
-        public async Task AddToWishList_ThrowsException_ReturnsBadRequest()
+        public async Task AddToWishList_ServiceThrowsException_ReturnsInternalServerError()
         {
             // Arrange
             var wishlistItemToAdd = new WishListDTO { ProductId = 1 };
-            _wishlistServiceMock.Setup(service => service.AddToWishList(It.IsAny<WishListDTO>())).ThrowsAsync(new AddToWishlistException("Test exception"));
+            _wishlistServiceMock.Setup(service => service.AddToWishList(It.IsAny<WishListDTO>())).ThrowsAsync(new Exception("Database error"));
 
             // Act
             var result = await _wishlistController.AddToWishList(wishlistItemToAdd);
 
             // Assert
-            var badRequestResult = result as BadRequestObjectResult;
-            Assert.IsNotNull(badRequestResult);
-            Assert.AreEqual(StatusCodes.Status400BadRequest, badRequestResult.StatusCode);
+            var objectResult = result as ObjectResult;
+            Assert.IsNotNull(objectResult);
+            Assert.AreEqual(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
+            Assert.AreEqual("An unexpected error occurred.", objectResult.Value);
         }
-
-        // Add more tests for other failure scenarios (e.g., GetUserWishList, RemoveFromWishlist exceptions)
     }
 }

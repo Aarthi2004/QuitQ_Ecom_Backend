@@ -25,6 +25,8 @@ namespace QuitQ_Ecom.Repositories
             _logger = logger;
         }
 
+        // ... existing methods (AddUser, DeleteUserById, etc.) remain the same ...
+
         public async Task<UserDTO> AddUser(UserDTO userDto)
         {
             try
@@ -99,5 +101,20 @@ namespace QuitQ_Ecom.Repositories
                 throw;
             }
         }
+
+
+        // --- NEW METHODS IMPLEMENTATION START ---
+        public async Task<User> FindUserByEmailAsync(string email)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        public async Task<bool> UpdateUserAsync(User user)
+        {
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        // --- NEW METHODS IMPLEMENTATION END ---
     }
 }

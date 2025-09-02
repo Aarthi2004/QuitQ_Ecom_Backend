@@ -26,13 +26,11 @@ namespace QuitQ_Ecom.Test
         {
             _cartServiceMock = new Mock<ICartService>();
             _loggerMock = new Mock<ILogger<CartController>>();
-
             _controller = new CartController(_cartServiceMock.Object, _loggerMock.Object);
 
-            // Mock the HttpContext and ClaimsPrincipal for authorization
             var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
             {
-                new Claim("UserId", _testUserId.ToString()), // Assumes the claim is "UserId"
+                new Claim(ClaimTypes.NameIdentifier, _testUserId.ToString()),
             }, "TestAuthentication"));
 
             _controller.ControllerContext = new ControllerContext()

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using QuitQ_Ecom.DTOs;
 using QuitQ_Ecom.Exceptions;
 using QuitQ_Ecom.Interfaces;
+using QuitQ_Ecom.Models; // Required for User model
 
 namespace QuitQ_Ecom.Services
 {
@@ -20,6 +21,8 @@ namespace QuitQ_Ecom.Services
             _userRepo = userRepo;
             _logger = logger;
         }
+
+        // ... existing methods (HashPassword, RegisterUser, etc.) remain the same ...
 
         public static string HashPassword(string password)
         {
@@ -93,5 +96,20 @@ namespace QuitQ_Ecom.Services
                 throw new UserNotFoundException($"User with ID {id} not found");
             return deletedUser;
         }
+
+        // --- NEW METHOD IMPLEMENTATION START ---
+        public async Task<bool> ResetPasswordAsync(ResetPasswordDTO resetPasswordDTO)
+        {
+            var user = await _userRepo.FindUserByEmailAsync(resetPasswordDTO.Email);
+
+            if (user == null)
+            {
+                throw new UserNotFoundException($"User with email '{resetPasswordDTO.Email}' not found.");
+            }
+
+            user.Password = HashPassword(resetPasswordDTO.NewPassword);
+            return await _userRepo.UpdateUserAsync(user);
+        }
+        // --- NEW METHOD IMPLEMENTATION END ---
     }
 }
